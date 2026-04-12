@@ -82,131 +82,65 @@
 
         function applySyntaxHighlighting() {
             if (!syntaxHighlighting) {
-                codeArea.style.color = 'black';
-                codeArea.style.backgroundColor = 'white';
                 return;
-            }
-            let text = codeArea.value;
-            let highlighted = text
-                .replace(/&/g, '&amp;')
-                .replace(/</g, '&lt;')
-                .replace(/>/g, '&gt;')
-                .replace(/(&lt;\/?[a-zA-Z][a-zA-Z0-9]*&gt;)/g, '<span style="color: #0000ff;">$1</span>')
-                .replace(/(&lt;!--.*?--&gt;)/g, '<span style="color: #008000;">$1</span>')
-                .replace(/=("|')(.*?)\1/g, '=<span style="color: #a31515;">$1$2$1</span>');
-            let tempDiv = document.createElement('div');
-            tempDiv.innerHTML = highlighted;
-            codeArea.style.color = 'black';
-            codeArea.style.backgroundColor = 'white';
-            if (codeArea.value === text) {
-                let lineCount = text.split(/\n/).length;
-                let lineNumbers = '';
-                for (let i = 1; i <= lineCount; i++) {
-                    lineNumbers += i + '\n';
-                }
             }
         }
 
         function toggleSyntaxHighlighting() {
             syntaxHighlighting = !syntaxHighlighting;
             syntaxBtn.textContent = syntaxHighlighting ? 'syntax highlighting: on' : 'syntax highlighting: off';
-            if (syntaxHighlighting) {
-                let text = codeArea.value;
-                let highlighted = '';
-                for (let i = 0; i < text.length; i++) {
-                    let char = text[i];
-                    if (char === '<') {
-                        highlighted += '&lt;';
-                    } else if (char === '>') {
-                        highlighted += '&gt;';
-                    } else if (char === '&') {
-                        highlighted += '&amp;';
-                    } else {
-                        highlighted += char;
-                    }
-                }
-                highlighted = highlighted.replace(/(&lt;\/?[a-zA-Z][a-zA-Z0-9]*&gt;)/g, '<span style="color: #0000ff;">$1</span>');
-                highlighted = highlighted.replace(/(&lt;!--.*?--&gt;)/g, '<span style="color: #008000;">$1</span>');
-                highlighted = highlighted.replace(/=("|')(.*?)\1/g, '=<span style="color: #a31515;">$1$2$1</span>');
-                codeArea.style.color = 'black';
-                codeArea.style.backgroundColor = 'white';
-                let tempTextarea = codeArea;
-                let originalValue = codeArea.value;
-                let tempDiv = document.createElement('div');
-                tempDiv.style.fontFamily = 'monospace';
-                tempDiv.style.whiteSpace = 'pre-wrap';
-                tempDiv.innerHTML = highlighted;
-                codeArea.style.display = 'none';
-                if (!window.highlightDiv) {
-                    window.highlightDiv = document.createElement('div');
-                    window.highlightDiv.style.fontFamily = 'monospace';
-                    window.highlightDiv.style.whiteSpace = 'pre-wrap';
-                    window.highlightDiv.style.position = 'absolute';
-                    window.highlightDiv.style.top = codeArea.offsetTop + 'px';
-                    window.highlightDiv.style.left = codeArea.offsetLeft + 'px';
-                    window.highlightDiv.style.width = codeArea.offsetWidth + 'px';
-                    window.highlightDiv.style.height = codeArea.offsetHeight + 'px';
-                    window.highlightDiv.style.overflow = 'auto';
-                    window.highlightDiv.style.padding = '2px';
-                    window.highlightDiv.style.border = '1px solid #ccc';
-                    window.highlightDiv.style.backgroundColor = 'white';
-                    codeArea.parentNode.insertBefore(window.highlightDiv, codeArea);
-                }
-                window.highlightDiv.innerHTML = highlighted;
-                window.highlightDiv.scrollTop = codeArea.scrollTop;
-                window.highlightDiv.scrollLeft = codeArea.scrollLeft;
-                codeArea.style.opacity = '0.01';
-                codeArea.style.position = 'relative';
-                codeArea.style.zIndex = '1';
-                window.highlightDiv.style.pointerEvents = 'none';
-            } else {
-                if (window.highlightDiv) {
-                    window.highlightDiv.style.display = 'none';
-                }
-                codeArea.style.opacity = '1';
-                codeArea.style.color = 'black';
-                codeArea.style.backgroundColor = 'white';
-            }
         }
 
-        function toggleDarkTheme() {
-            darkTheme = !darkTheme;
-            darkThemeBtn.textContent = darkTheme ? 'dark theme: on' : 'dark theme: off';
+        function applyDarkTheme() {
             if (darkTheme) {
                 document.body.style.backgroundColor = '#2d2d2d';
                 document.body.style.color = '#e0e0e0';
-                previewDiv.style.backgroundColor = '#1e1e1e';
+                previewDiv.style.backgroundColor = '#2d2d2d';
                 previewDiv.style.border = '2px solid #555';
-                codeArea.style.backgroundColor = '#1e1e1e';
+                previewDiv.style.color = '#e0e0e0';
+                codeArea.style.backgroundColor = '#2d2d2d';
                 codeArea.style.color = '#e0e0e0';
-                if (window.highlightDiv) {
-                    window.highlightDiv.style.backgroundColor = '#1e1e1e';
-                    window.highlightDiv.style.color = '#e0e0e0';
-                }
+                codeArea.style.border = '1px solid #555';
                 const buttons = document.querySelectorAll('button');
                 for (let btn of buttons) {
                     btn.style.backgroundColor = '#3d3d3d';
                     btn.style.color = '#e0e0e0';
                     btn.style.border = '1px solid #666';
                 }
+                const tabs = tabsBar.querySelectorAll('button');
+                for (let i = 0; i < tabs.length; i++) {
+                    tabs[i].style.backgroundColor = i === currentFileIndex ? '#555' : '#3d3d3d';
+                    tabs[i].style.color = '#e0e0e0';
+                    tabs[i].style.border = '1px solid #666';
+                }
             } else {
                 document.body.style.backgroundColor = 'white';
                 document.body.style.color = 'black';
                 previewDiv.style.backgroundColor = 'white';
                 previewDiv.style.border = '2px solid gray';
+                previewDiv.style.color = 'black';
                 codeArea.style.backgroundColor = 'white';
                 codeArea.style.color = 'black';
-                if (window.highlightDiv) {
-                    window.highlightDiv.style.backgroundColor = 'white';
-                    window.highlightDiv.style.color = 'black';
-                }
+                codeArea.style.border = '1px solid #ccc';
                 const buttons = document.querySelectorAll('button');
                 for (let btn of buttons) {
                     btn.style.backgroundColor = '';
                     btn.style.color = '';
                     btn.style.border = '';
                 }
+                const tabs = tabsBar.querySelectorAll('button');
+                for (let i = 0; i < tabs.length; i++) {
+                    tabs[i].style.backgroundColor = i === currentFileIndex ? '#ccc' : '#eee';
+                    tabs[i].style.color = 'black';
+                    tabs[i].style.border = '1px solid #888';
+                }
             }
+        }
+
+        function toggleDarkTheme() {
+            darkTheme = !darkTheme;
+            darkThemeBtn.textContent = darkTheme ? 'dark theme: on' : 'dark theme: off';
+            applyDarkTheme();
         }
 
         function loadFile(index) {
@@ -214,12 +148,11 @@
             saveCurrentContent();
             currentFileIndex = index;
             codeArea.value = files[currentFileIndex].content;
-            if (syntaxHighlighting) {
-                toggleSyntaxHighlighting();
-                toggleSyntaxHighlighting();
-            }
             updatePreview();
             renderTabs();
+            if (darkTheme) {
+                applyDarkTheme();
+            }
         }
 
         function renderTabs() {
@@ -230,11 +163,14 @@
                 tab.style.padding = '5px 15px';
                 tab.style.cursor = 'pointer';
                 tab.style.marginRight = '5px';
-                tab.style.background = i === currentFileIndex ? '#ccc' : '#eee';
-                tab.style.border = '1px solid #888';
                 if (darkTheme) {
                     tab.style.background = i === currentFileIndex ? '#555' : '#3d3d3d';
                     tab.style.color = '#e0e0e0';
+                    tab.style.border = '1px solid #666';
+                } else {
+                    tab.style.background = i === currentFileIndex ? '#ccc' : '#eee';
+                    tab.style.color = 'black';
+                    tab.style.border = '1px solid #888';
                 }
                 tab.onclick = (function(idx) {
                     return function() { loadFile(idx); };
@@ -250,12 +186,11 @@
             files.push({ name: newName, content: '' });
             currentFileIndex = newIndex;
             codeArea.value = files[currentFileIndex].content;
-            if (syntaxHighlighting) {
-                toggleSyntaxHighlighting();
-                toggleSyntaxHighlighting();
-            }
             updatePreview();
             renderTabs();
+            if (darkTheme) {
+                applyDarkTheme();
+            }
         }
 
         function deleteCurrentFile() {
@@ -269,12 +204,11 @@
                 currentFileIndex = files.length - 1;
             }
             codeArea.value = files[currentFileIndex].content;
-            if (syntaxHighlighting) {
-                toggleSyntaxHighlighting();
-                toggleSyntaxHighlighting();
-            }
             updatePreview();
             renderTabs();
+            if (darkTheme) {
+                applyDarkTheme();
+            }
         }
 
         function renameCurrentFile() {
@@ -282,6 +216,9 @@
             if (newName && newName.trim() !== '') {
                 files[currentFileIndex].name = newName.trim();
                 renderTabs();
+                if (darkTheme) {
+                    applyDarkTheme();
+                }
             }
         }
 
@@ -349,10 +286,6 @@
         codeArea.oninput = function() {
             if (files[currentFileIndex]) {
                 files[currentFileIndex].content = codeArea.value;
-                if (syntaxHighlighting) {
-                    toggleSyntaxHighlighting();
-                    toggleSyntaxHighlighting();
-                }
                 updatePreview();
             }
         };
