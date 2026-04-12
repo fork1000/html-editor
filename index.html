@@ -21,15 +21,15 @@
 
         <div id="mainLayout" style="display: flex; gap: 10px;">
             <div style="flex: 1;">
-                <textarea id="code" rows="12" cols="55" style="font-family: monospace; width: 100%;"></textarea>
+                <textarea id="code" rows="6" cols="55" style="font-family: monospace; width: 100%;"></textarea>
             </div>
 
             <div style="flex: 1;">
-                <div id="preview" style="border: 2px solid gray; padding: 10px; min-height: 200px; background: white;"></div>
+                <div id="preview" style="border: 2px solid gray; padding: 10px; min-height: 150px; background: white;"></div>
             </div>
         </div>
 
-        <div style="margin-top: 15px;">
+        <div style="margin-top: 10px;">
             <button id="newFileBtn">new file</button>
             <button id="deleteFileBtn" style="margin-left: 10px;">delete current file</button>
             <button id="renameFileBtn" style="margin-left: 10px;">rename current file</button>
@@ -136,7 +136,7 @@
                 const rightDiv = mainLayout.children[1];
                 if (leftDiv) leftDiv.style.marginBottom = '20px';
                 if (rightDiv) rightDiv.style.marginTop = '20px';
-                codeArea.style.height = '200px';
+                codeArea.style.height = '150px';
                 codeArea.style.fontSize = '16px';
             } else {
                 mainLayout.style.display = 'flex';
