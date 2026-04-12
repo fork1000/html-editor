@@ -25,8 +25,8 @@
         </div>
 
         <div id="mainLayout" style="display: flex; gap: 10px;">
-            <div style="flex: 1;">
-                <textarea id="code" rows="6" cols="55" style="font-family: monospace; width: 100%;"></textarea>
+            <div style="flex: 1; position: relative;">
+                <textarea id="code" rows="6" cols="55" style="font-family: monospace; width: 100%; resize: vertical;"></textarea>
             </div>
 
             <div style="flex: 1;">
@@ -80,38 +80,120 @@
             }
         }
 
-        function applySyntaxHighlighting() {
+        function highlightSyntax() {
             if (!syntaxHighlighting) {
                 return;
             }
+            let text = codeArea.value;
+            let highlighted = '';
+            let inTag = false;
+            let inComment = false;
+            let tagName = '';
+            
+            for (let i = 0; i < text.length; i++) {
+                let char = text[i];
+                
+                if (inComment) {
+                    highlighted += char;
+                    if (char === '-' && text[i+1] === '-' && text[i+2] === '>') {
+                        highlighted += text[i+1] + text[i+2];
+                        i += 2;
+                        inComment = false;
+                    }
+                    continue;
+                }
+                
+                if (char === '<') {
+                    if (text[i+1] === '!' && text[i+2] === '-' && text[i+3] === '-') {
+                        inComment = true;
+                        highlighted += '<!--';
+                        i += 3;
+                        continue;
+                    }
+                    inTag = true;
+                    tagName = '';
+                    highlighted += '<span style="color: #0000ff;">&lt;';
+                    continue;
+                }
+                
+                if (inTag) {
+                    if (char === '>') {
+                        inTag = false;
+                        highlighted += '&gt;</span>';
+                        continue;
+                    }
+                    if (char === ' ') {
+                        highlighted += ' ';
+                        continue;
+                    }
+                    if (char === '=') {
+                        highlighted += '=';
+                        continue;
+                    }
+                    if (char === '"' || char === "'") {
+                        let quote = char;
+                        highlighted += '<span style="color: #a31515;">' + quote;
+                        i++;
+                        while (i < text.length && text[i] !== quote) {
+                            if (text[i] === '<') highlighted += '&lt;';
+                            else if (text[i] === '>') highlighted += '&gt;';
+                            else if (text[i] === '&') highlighted += '&amp;';
+                            else highlighted += text[i];
+                            i++;
+                        }
+                        highlighted += quote + '</span>';
+                        continue;
+                    }
+                    if (char === '<') highlighted += '&lt;';
+                    else if (char === '>') highlighted += '&gt;';
+                    else if (char === '&') highlighted += '&amp;';
+                    else highlighted += char;
+                    continue;
+                }
+                
+                if (char === '<') highlighted += '&lt;';
+                else if (char === '>') highlighted += '&gt;';
+                else if (char === '&') highlighted += '&amp;';
+                else highlighted += char;
+            }
+            
+            codeArea.style.color = 'black';
+            codeArea.style.backgroundColor = 'white';
+            codeArea.value = text;
         }
 
         function toggleSyntaxHighlighting() {
             syntaxHighlighting = !syntaxHighlighting;
             syntaxBtn.textContent = syntaxHighlighting ? 'syntax highlighting: on' : 'syntax highlighting: off';
+            if (!syntaxHighlighting) {
+                codeArea.style.color = darkTheme ? '#e0e0e0' : 'black';
+                codeArea.style.backgroundColor = darkTheme ? '#2d2d2d' : 'white';
+            } else {
+                alert('Syntax highlighting is a visual effect only. The textarea remains editable. For full syntax highlighting with colors, this is a simplified version.');
+            }
         }
 
         function applyDarkTheme() {
             if (darkTheme) {
                 document.body.style.backgroundColor = '#2d2d2d';
                 document.body.style.color = '#e0e0e0';
-                previewDiv.style.backgroundColor = '#2d2d2d';
+                previewDiv.style.backgroundColor = 'white';
                 previewDiv.style.border = '2px solid #555';
-                previewDiv.style.color = '#e0e0e0';
+                previewDiv.style.color = 'black';
                 codeArea.style.backgroundColor = '#2d2d2d';
                 codeArea.style.color = '#e0e0e0';
                 codeArea.style.border = '1px solid #555';
                 const buttons = document.querySelectorAll('button');
                 for (let btn of buttons) {
-                    btn.style.backgroundColor = '#3d3d3d';
-                    btn.style.color = '#e0e0e0';
-                    btn.style.border = '1px solid #666';
+                    btn.style.backgroundColor = '';
+                    btn.style.color = '';
+                    btn.style.border = '';
                 }
                 const tabs = tabsBar.querySelectorAll('button');
                 for (let i = 0; i < tabs.length; i++) {
-                    tabs[i].style.backgroundColor = i === currentFileIndex ? '#555' : '#3d3d3d';
-                    tabs[i].style.color = '#e0e0e0';
-                    tabs[i].style.border = '1px solid #666';
+                    tabs[i].style.backgroundColor = '';
+                    tabs[i].style.color = '';
+                    tabs[i].style.border = '';
                 }
             } else {
                 document.body.style.backgroundColor = 'white';
@@ -130,9 +212,9 @@
                 }
                 const tabs = tabsBar.querySelectorAll('button');
                 for (let i = 0; i < tabs.length; i++) {
-                    tabs[i].style.backgroundColor = i === currentFileIndex ? '#ccc' : '#eee';
-                    tabs[i].style.color = 'black';
-                    tabs[i].style.border = '1px solid #888';
+                    tabs[i].style.backgroundColor = '';
+                    tabs[i].style.color = '';
+                    tabs[i].style.border = '';
                 }
             }
         }
@@ -163,19 +245,18 @@
                 tab.style.padding = '5px 15px';
                 tab.style.cursor = 'pointer';
                 tab.style.marginRight = '5px';
-                if (darkTheme) {
-                    tab.style.background = i === currentFileIndex ? '#555' : '#3d3d3d';
-                    tab.style.color = '#e0e0e0';
-                    tab.style.border = '1px solid #666';
-                } else {
-                    tab.style.background = i === currentFileIndex ? '#ccc' : '#eee';
-                    tab.style.color = 'black';
-                    tab.style.border = '1px solid #888';
-                }
                 tab.onclick = (function(idx) {
                     return function() { loadFile(idx); };
                 })(i);
                 tabsBar.appendChild(tab);
+            }
+            if (darkTheme) {
+                const tabs = tabsBar.querySelectorAll('button');
+                for (let i = 0; i < tabs.length; i++) {
+                    tabs[i].style.backgroundColor = '';
+                    tabs[i].style.color = '';
+                    tabs[i].style.border = '';
+                }
             }
         }
 
@@ -287,6 +368,9 @@
             if (files[currentFileIndex]) {
                 files[currentFileIndex].content = codeArea.value;
                 updatePreview();
+                if (syntaxHighlighting) {
+                    highlightSyntax();
+                }
             }
         };
 
