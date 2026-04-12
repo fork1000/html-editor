@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>html editor</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body>
+
+    <div id="deviceSelector" style="text-align: center; margin-top: 50px;">
+        <h2>choose your device</h2>
+        <button id="pcBtn" style="padding: 15px 30px; font-size: 18px; margin: 10px;">pc / desktop</button>
+        <button id="phoneBtn" style="padding: 15px 30px; font-size: 18px; margin: 10px;">phone / mobile</button>
+    </div>
+
+    <div id="editorContainer" style="display: none;">
+
+        <h1>html editor</h1>
+
+        <div id="tabsBar" style="border-bottom: 2px solid gray; margin-bottom: 10px; display: flex; flex-wrap: wrap; gap: 5px; align-items: center;">
+        </div>
+
+        <div id="mainLayout" style="display: flex; gap: 10px;">
+            <div style="flex: 1;">
+                <textarea id="code" rows="25" cols="55" style="font-family: monospace; width: 100%;"></textarea>
+                <br>
+                <button id="newFileBtn">new file</button>
+                <button id="deleteFileBtn" style="margin-left: 10px;">delete current file</button>
+                <button id="renameFileBtn" style="margin-left: 10px;">rename current file</button>
+            </div>
+
+            <div style="flex: 1;">
+                <div id="preview" style="border: 2px solid gray; padding: 10px; min-height: 400px; background: white;"></div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        let files = [
+            { name: 'file1', content: '' },
+            { name: 'file2', content: '' }
+        ];
+        let currentFileIndex = 0;
+        let isPhone = false;
+
+        const codeArea = document.getElementById('code');
+        const previewDiv = document.getElementById('preview');
+        const tabsBar = document.getElementById('tabsBar');
+        const newFileBtn = document.getElementById('newFileBtn');
+        const deleteFileBtn = document.getElementById('deleteFileBtn');
+        const renameFileBtn = document.getElementById('renameFileBtn');
+        const deviceSelector = document.getElementById('deviceSelector');
+        const editorContainer = document.getElementById('editorContainer');
+        const mainLayout = document.getElementById('mainLayout');
+        const pcBtn = document.getElementById('pcBtn');
+        const phoneBtn = document.getElementById('phoneBtn');
+
+        function saveCurrentContent() {
+            if (files[currentFileIndex]) {
+                files[currentFileIndex].content = codeArea.value;
+            }
+        }
+
+        function updatePreview() {
+            if (files[currentFileIndex]) {
+                previewDiv.innerHTML = files[currentFileIndex].content;
+            }
+        }
+
+        function loadFile(index) {
+            if (index === currentFileIndex) return;
+            saveCurrentContent();
+            currentFileIndex = index;
+            codeArea.value = files[currentFileIndex].content;
+            updatePreview();
+            renderTabs();
+        }
+
+        function renderTabs() {
+            tabsBar.innerHTML = '';
+            for (let i = 0; i < files.length; i++) {
+                const tab = document.createElement('button');
+                tab.textContent = files[i].name;
+                tab.style.padding = '5px 15px';
+                tab.style.cursor = 'pointer';
+                tab.style.marginRight = '5px';
+                tab.style.background = i === currentFileIndex ? '#ccc' : '#eee';
+                tab.style.border = '1px solid #888';
+                tab.onclick = (function(idx) {
+                    return function() { loadFile(idx); };
+                })(i);
+                tabsBar.appendChild(tab);
+            }
+        }
+
+        function newFile() {
+            saveCurrentContent();
+            let newIndex = files.length;
+            let newName = 'file' + (newIndex + 1);
+            files.push({ name: newName, content: '' });
+            currentFileIndex = newIndex;
+            codeArea.value = files[currentFileIndex].content;
+            updatePreview();
+            renderTabs();
+        }
+
+        function deleteCurrentFile() {
+            if (files.length === 1) {
+                alert('Cannot delete last file');
+                return;
+            }
+            saveCurrentContent();
+            files.splice(currentFileIndex, 1);
+            if (currentFileIndex >= files.length) {
+                currentFileIndex = files.length - 1;
+            }
+            codeArea.value = files[currentFileIndex].content;
+            updatePreview();
+            renderTabs();
+        }
+
+        function renameCurrentFile() {
+            let newName = prompt('Enter new name for file:', files[currentFileIndex].name);
+            if (newName && newName.trim() !== '') {
+                files[currentFileIndex].name = newName.trim();
+                renderTabs();
+            }
+        }
+
+        function applyLayout() {
+            if (isPhone) {
+                mainLayout.style.display = 'block';
+                const leftDiv = mainLayout.children[0];
+                const rightDiv = mainLayout.children[1];
+                if (leftDiv) leftDiv.style.marginBottom = '20px';
+                if (rightDiv) rightDiv.style.marginTop = '20px';
+                codeArea.style.height = '300px';
+                codeArea.style.fontSize = '16px';
+            } else {
+                mainLayout.style.display = 'flex';
+                const leftDiv = mainLayout.children[0];
+                const rightDiv = mainLayout.children[1];
+                if (leftDiv) leftDiv.style.marginBottom = '0';
+                if (rightDiv) rightDiv.style.marginTop = '0';
+                codeArea.style.height = 'auto';
+                codeArea.style.fontSize = '14px';
+            }
+        }
+
+        window.switchToFile = function(index) {
+            if (index >= 0 && index < files.length) {
+                loadFile(index);
+            }
+        };
+
+        function initEditor() {
+            deviceSelector.style.display = 'none';
+            editorContainer.style.display = 'block';
+            renderTabs();
+            codeArea.value = files[currentFileIndex].content;
+            updatePreview();
+            applyLayout();
+        }
+
+        pcBtn.onclick = function() {
+            isPhone = false;
+            initEditor();
+        };
+
+        phoneBtn.onclick = function() {
+            isPhone = true;
+            initEditor();
+        };
+
+        codeArea.oninput = function() {
+            if (files[currentFileIndex]) {
+                files[currentFileIndex].content = codeArea.value;
+                updatePreview();
+            }
+        };
+
+        newFileBtn.onclick = newFile;
+        deleteFileBtn.onclick = deleteCurrentFile;
+        renameFileBtn.onclick = renameCurrentFile;
+
+    </script>
+
+</body>
+</html>
