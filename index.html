@@ -19,6 +19,7 @@
         <div style="margin-bottom: 10px; display: flex; flex-wrap: wrap; gap: 10px;">
             <button id="darkThemeBtn">dark theme: off</button>
             <button id="clearAllBtn">clear all files</button>
+            <button id="fullscreenPreviewBtn">preview fullscreen: off</button>
         </div>
 
         <div id="tabsBar" style="border-bottom: 2px solid gray; margin-bottom: 10px; display: flex; flex-wrap: wrap; gap: 5px; align-items: center;">
@@ -29,7 +30,7 @@
                 <textarea id="code" rows="6" cols="55" style="font-family: monospace; width: 100%; resize: vertical;"></textarea>
             </div>
 
-            <div style="flex: 1;">
+            <div style="flex: 1;" id="previewContainer">
                 <div id="preview" style="border: 2px solid gray; padding: 10px; min-height: 150px; background: white;"></div>
             </div>
         </div>
@@ -51,9 +52,12 @@
         let currentFileIndex = 0;
         let isPhone = false;
         let darkTheme = false;
+        let previewFullscreen = false;
 
         const codeArea = document.getElementById('code');
         const previewDiv = document.getElementById('preview');
+        const previewContainer = document.getElementById('previewContainer');
+        const mainLayout = document.getElementById('mainLayout');
         const tabsBar = document.getElementById('tabsBar');
         const newFileBtn = document.getElementById('newFileBtn');
         const deleteFileBtn = document.getElementById('deleteFileBtn');
@@ -61,9 +65,9 @@
         const downloadFileBtn = document.getElementById('downloadFileBtn');
         const darkThemeBtn = document.getElementById('darkThemeBtn');
         const clearAllBtn = document.getElementById('clearAllBtn');
+        const fullscreenPreviewBtn = document.getElementById('fullscreenPreviewBtn');
         const deviceSelector = document.getElementById('deviceSelector');
         const editorContainer = document.getElementById('editorContainer');
-        const mainLayout = document.getElementById('mainLayout');
         const pcBtn = document.getElementById('pcBtn');
         const phoneBtn = document.getElementById('phoneBtn');
 
@@ -95,12 +99,7 @@
                     btn.style.color = '';
                     btn.style.border = '';
                 }
-                const tabs = tabsBar.querySelectorAll('button');
-                for (let i = 0; i < tabs.length; i++) {
-                    tabs[i].style.backgroundColor = '';
-                    tabs[i].style.color = '';
-                    tabs[i].style.border = '';
-                }
+                renderTabs();
             } else {
                 document.body.style.backgroundColor = 'white';
                 document.body.style.color = 'black';
@@ -116,12 +115,7 @@
                     btn.style.color = '';
                     btn.style.border = '';
                 }
-                const tabs = tabsBar.querySelectorAll('button');
-                for (let i = 0; i < tabs.length; i++) {
-                    tabs[i].style.backgroundColor = '';
-                    tabs[i].style.color = '';
-                    tabs[i].style.border = '';
-                }
+                renderTabs();
             }
         }
 
@@ -142,6 +136,41 @@
                 if (darkTheme) {
                     applyDarkTheme();
                 }
+            }
+        }
+
+        function toggleFullscreenPreview() {
+            previewFullscreen = !previewFullscreen;
+            fullscreenPreviewBtn.textContent = previewFullscreen ? 'preview fullscreen: on' : 'preview fullscreen: off';
+            
+            if (previewFullscreen) {
+                mainLayout.style.display = 'none';
+                previewContainer.style.position = 'fixed';
+                previewContainer.style.top = '0';
+                previewContainer.style.left = '0';
+                previewContainer.style.width = '100%';
+                previewContainer.style.height = '100%';
+                previewContainer.style.zIndex = '9999';
+                previewContainer.style.backgroundColor = 'white';
+                previewDiv.style.height = 'calc(100vh - 40px)';
+                previewDiv.style.overflow = 'auto';
+                previewDiv.style.minHeight = 'auto';
+            } else {
+                previewContainer.style.position = '';
+                previewContainer.style.top = '';
+                previewContainer.style.left = '';
+                previewContainer.style.width = '';
+                previewContainer.style.height = '';
+                previewContainer.style.zIndex = '';
+                previewContainer.style.backgroundColor = '';
+                previewDiv.style.height = '';
+                previewDiv.style.overflow = '';
+                previewDiv.style.minHeight = '150px';
+                mainLayout.style.display = 'flex';
+                if (isPhone) {
+                    mainLayout.style.display = 'block';
+                }
+                applyLayout();
             }
         }
 
@@ -166,13 +195,25 @@
                 tab.style.cursor = 'pointer';
                 tab.style.marginRight = '5px';
                 if (darkTheme) {
-                    tab.style.background = i === currentFileIndex ? '#555' : '#3d3d3d';
-                    tab.style.color = '#e0e0e0';
-                    tab.style.border = '1px solid #666';
+                    if (i === currentFileIndex) {
+                        tab.style.background = '#777';
+                        tab.style.color = 'white';
+                        tab.style.border = '2px solid #aaa';
+                    } else {
+                        tab.style.background = '#3d3d3d';
+                        tab.style.color = '#e0e0e0';
+                        tab.style.border = '1px solid #666';
+                    }
                 } else {
-                    tab.style.background = i === currentFileIndex ? '#ccc' : '#eee';
-                    tab.style.color = 'black';
-                    tab.style.border = '1px solid #888';
+                    if (i === currentFileIndex) {
+                        tab.style.background = '#ccc';
+                        tab.style.color = 'black';
+                        tab.style.border = '1px solid #888';
+                    } else {
+                        tab.style.background = '#eee';
+                        tab.style.color = 'black';
+                        tab.style.border = '1px solid #888';
+                    }
                 }
                 tab.onclick = (function(idx) {
                     return function() { loadFile(idx); };
@@ -298,6 +339,7 @@
         downloadFileBtn.onclick = downloadCurrentFile;
         darkThemeBtn.onclick = toggleDarkTheme;
         clearAllBtn.onclick = clearAllFiles;
+        fullscreenPreviewBtn.onclick = toggleFullscreenPreview;
 
     </script>
 
