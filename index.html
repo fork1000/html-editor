@@ -14,32 +14,42 @@
 
     <div id="editorContainer" style="display: none;">
 
-        <h1>html editor</h1>
+        <div id="normalView">
+            <h1>html editor</h1>
 
-        <div style="margin-bottom: 10px; display: flex; flex-wrap: wrap; gap: 10px;">
-            <button id="darkThemeBtn">dark theme: off</button>
-            <button id="clearAllBtn">clear all files</button>
-            <button id="fullscreenPreviewBtn">preview fullscreen: off</button>
-        </div>
-
-        <div id="tabsBar" style="border-bottom: 2px solid gray; margin-bottom: 10px; display: flex; flex-wrap: wrap; gap: 5px; align-items: center;">
-        </div>
-
-        <div id="mainLayout" style="display: flex; gap: 10px;">
-            <div style="flex: 1;">
-                <textarea id="code" rows="6" cols="55" style="font-family: monospace; width: 100%; resize: vertical;"></textarea>
+            <div style="margin-bottom: 10px; display: flex; flex-wrap: wrap; gap: 10px;">
+                <button id="darkThemeBtn">dark theme: off</button>
+                <button id="clearAllBtn">clear all files</button>
+                <button id="fullscreenPreviewBtn">preview fullscreen: off</button>
             </div>
 
-            <div style="flex: 1;" id="previewContainer">
-                <div id="preview" style="border: 2px solid gray; padding: 10px; min-height: 150px; background: white;"></div>
+            <div id="tabsBar" style="border-bottom: 2px solid gray; margin-bottom: 10px; display: flex; flex-wrap: wrap; gap: 5px; align-items: center;">
+            </div>
+
+            <div id="mainLayout" style="display: flex; gap: 10px;">
+                <div style="flex: 1;">
+                    <textarea id="code" rows="6" cols="55" style="font-family: monospace; width: 100%; resize: vertical;"></textarea>
+                </div>
+
+                <div style="flex: 1;" id="previewContainer">
+                    <div id="preview" style="border: 2px solid gray; padding: 10px; min-height: 150px; background: white;"></div>
+                </div>
+            </div>
+
+            <div style="margin-top: 10px;">
+                <button id="newFileBtn">new file</button>
+                <button id="deleteFileBtn" style="margin-left: 10px;">delete current file</button>
+                <button id="renameFileBtn" style="margin-left: 10px;">rename current file</button>
+                <button id="downloadFileBtn" style="margin-left: 10px;">download current file</button>
             </div>
         </div>
 
-        <div style="margin-top: 10px;">
-            <button id="newFileBtn">new file</button>
-            <button id="deleteFileBtn" style="margin-left: 10px;">delete current file</button>
-            <button id="renameFileBtn" style="margin-left: 10px;">rename current file</button>
-            <button id="downloadFileBtn" style="margin-left: 10px;">download current file</button>
+        <div id="fullscreenView" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 9999; background: white;">
+            <div style="padding: 10px; background: #f0f0f0; border-bottom: 2px solid gray;">
+                <button id="exitFullscreenBtn">exit fullscreen</button>
+                <span style="margin-left: 20px;">preview fullscreen mode</span>
+            </div>
+            <div id="fullscreenPreview" style="padding: 20px; height: calc(100% - 60px); overflow: auto; background: white;"></div>
         </div>
 
     </div>
@@ -56,8 +66,9 @@
 
         const codeArea = document.getElementById('code');
         const previewDiv = document.getElementById('preview');
-        const previewContainer = document.getElementById('previewContainer');
-        const mainLayout = document.getElementById('mainLayout');
+        const fullscreenPreview = document.getElementById('fullscreenPreview');
+        const normalView = document.getElementById('normalView');
+        const fullscreenView = document.getElementById('fullscreenView');
         const tabsBar = document.getElementById('tabsBar');
         const newFileBtn = document.getElementById('newFileBtn');
         const deleteFileBtn = document.getElementById('deleteFileBtn');
@@ -66,8 +77,10 @@
         const darkThemeBtn = document.getElementById('darkThemeBtn');
         const clearAllBtn = document.getElementById('clearAllBtn');
         const fullscreenPreviewBtn = document.getElementById('fullscreenPreviewBtn');
+        const exitFullscreenBtn = document.getElementById('exitFullscreenBtn');
         const deviceSelector = document.getElementById('deviceSelector');
         const editorContainer = document.getElementById('editorContainer');
+        const mainLayout = document.getElementById('mainLayout');
         const pcBtn = document.getElementById('pcBtn');
         const phoneBtn = document.getElementById('phoneBtn');
 
@@ -80,6 +93,9 @@
         function updatePreview() {
             if (files[currentFileIndex]) {
                 previewDiv.innerHTML = files[currentFileIndex].content;
+                if (fullscreenPreview) {
+                    fullscreenPreview.innerHTML = files[currentFileIndex].content;
+                }
             }
         }
 
@@ -90,6 +106,10 @@
                 previewDiv.style.backgroundColor = 'white';
                 previewDiv.style.border = '2px solid #555';
                 previewDiv.style.color = 'black';
+                if (fullscreenPreview) {
+                    fullscreenPreview.style.backgroundColor = 'white';
+                    fullscreenPreview.style.color = 'black';
+                }
                 codeArea.style.backgroundColor = '#2d2d2d';
                 codeArea.style.color = '#e0e0e0';
                 codeArea.style.border = '1px solid #555';
@@ -106,6 +126,10 @@
                 previewDiv.style.backgroundColor = 'white';
                 previewDiv.style.border = '2px solid gray';
                 previewDiv.style.color = 'black';
+                if (fullscreenPreview) {
+                    fullscreenPreview.style.backgroundColor = 'white';
+                    fullscreenPreview.style.color = 'black';
+                }
                 codeArea.style.backgroundColor = 'white';
                 codeArea.style.color = 'black';
                 codeArea.style.border = '1px solid #ccc';
@@ -144,34 +168,28 @@
             fullscreenPreviewBtn.textContent = previewFullscreen ? 'preview fullscreen: on' : 'preview fullscreen: off';
             
             if (previewFullscreen) {
-                mainLayout.style.display = 'none';
-                previewContainer.style.position = 'fixed';
-                previewContainer.style.top = '0';
-                previewContainer.style.left = '0';
-                previewContainer.style.width = '100%';
-                previewContainer.style.height = '100%';
-                previewContainer.style.zIndex = '9999';
-                previewContainer.style.backgroundColor = 'white';
-                previewDiv.style.height = 'calc(100vh - 40px)';
-                previewDiv.style.overflow = 'auto';
-                previewDiv.style.minHeight = 'auto';
-            } else {
-                previewContainer.style.position = '';
-                previewContainer.style.top = '';
-                previewContainer.style.left = '';
-                previewContainer.style.width = '';
-                previewContainer.style.height = '';
-                previewContainer.style.zIndex = '';
-                previewContainer.style.backgroundColor = '';
-                previewDiv.style.height = '';
-                previewDiv.style.overflow = '';
-                previewDiv.style.minHeight = '150px';
-                mainLayout.style.display = 'flex';
-                if (isPhone) {
-                    mainLayout.style.display = 'block';
+                normalView.style.display = 'none';
+                fullscreenView.style.display = 'block';
+                fullscreenPreview.innerHTML = files[currentFileIndex].content;
+                if (darkTheme) {
+                    fullscreenPreview.style.backgroundColor = 'white';
+                    fullscreenPreview.style.color = 'black';
+                    document.body.style.backgroundColor = '#2d2d2d';
+                } else {
+                    fullscreenPreview.style.backgroundColor = 'white';
+                    fullscreenPreview.style.color = 'black';
                 }
-                applyLayout();
+            } else {
+                normalView.style.display = 'block';
+                fullscreenView.style.display = 'none';
             }
+        }
+
+        function exitFullscreen() {
+            previewFullscreen = false;
+            fullscreenPreviewBtn.textContent = 'preview fullscreen: off';
+            normalView.style.display = 'block';
+            fullscreenView.style.display = 'none';
         }
 
         function loadFile(index) {
@@ -340,6 +358,7 @@
         darkThemeBtn.onclick = toggleDarkTheme;
         clearAllBtn.onclick = clearAllFiles;
         fullscreenPreviewBtn.onclick = toggleFullscreenPreview;
+        exitFullscreenBtn.onclick = exitFullscreen;
 
     </script>
 
