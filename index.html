@@ -3,9 +3,6 @@
 <head>
     <title>html editor</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
-    <script>hljs.configure({ tabReplace: '    ' });</script>
 </head>
 <body>
 
@@ -20,17 +17,16 @@
         <h1>html editor</h1>
 
         <div style="margin-bottom: 10px; display: flex; flex-wrap: wrap; gap: 10px;">
-            <button id="syntaxBtn">syntax highlighting: off</button>
             <button id="darkThemeBtn">dark theme: off</button>
+            <button id="clearAllBtn">clear all files</button>
         </div>
 
         <div id="tabsBar" style="border-bottom: 2px solid gray; margin-bottom: 10px; display: flex; flex-wrap: wrap; gap: 5px; align-items: center;">
         </div>
 
         <div id="mainLayout" style="display: flex; gap: 10px;">
-            <div style="flex: 1; position: relative;">
-                <div id="highlightedCode" style="font-family: monospace; font-size: 14px; white-space: pre-wrap; word-wrap: break-word; border: 1px solid #ccc; padding: 2px; min-height: 150px; display: none; overflow: auto;"></div>
-                <textarea id="code" rows="6" cols="55" style="font-family: monospace; width: 100%; resize: vertical; display: block;"></textarea>
+            <div style="flex: 1;">
+                <textarea id="code" rows="6" cols="55" style="font-family: monospace; width: 100%; resize: vertical;"></textarea>
             </div>
 
             <div style="flex: 1;">
@@ -54,19 +50,17 @@
         ];
         let currentFileIndex = 0;
         let isPhone = false;
-        let syntaxHighlighting = false;
         let darkTheme = false;
 
         const codeArea = document.getElementById('code');
-        const highlightedDiv = document.getElementById('highlightedCode');
         const previewDiv = document.getElementById('preview');
         const tabsBar = document.getElementById('tabsBar');
         const newFileBtn = document.getElementById('newFileBtn');
         const deleteFileBtn = document.getElementById('deleteFileBtn');
         const renameFileBtn = document.getElementById('renameFileBtn');
         const downloadFileBtn = document.getElementById('downloadFileBtn');
-        const syntaxBtn = document.getElementById('syntaxBtn');
         const darkThemeBtn = document.getElementById('darkThemeBtn');
+        const clearAllBtn = document.getElementById('clearAllBtn');
         const deviceSelector = document.getElementById('deviceSelector');
         const editorContainer = document.getElementById('editorContainer');
         const mainLayout = document.getElementById('mainLayout');
@@ -85,50 +79,6 @@
             }
         }
 
-        function updateHighlighting() {
-            if (!syntaxHighlighting) return;
-            let code = codeArea.value;
-            let escaped = code.replace(/[&<>]/g, function(m) {
-                if (m === '&') return '&amp;';
-                if (m === '<') return '&lt;';
-                if (m === '>') return '&gt;';
-                return m;
-            });
-            highlightedDiv.innerHTML = '<pre><code class="language-html">' + escaped + '</code></pre>';
-            hljs.highlightElement(highlightedDiv.querySelector('code'));
-            highlightedDiv.scrollTop = codeArea.scrollTop;
-            highlightedDiv.scrollLeft = codeArea.scrollLeft;
-        }
-
-        function toggleSyntaxHighlighting() {
-            syntaxHighlighting = !syntaxHighlighting;
-            syntaxBtn.textContent = syntaxHighlighting ? 'syntax highlighting: on' : 'syntax highlighting: off';
-            
-            if (syntaxHighlighting) {
-                codeArea.style.display = 'none';
-                highlightedDiv.style.display = 'block';
-                highlightedDiv.style.backgroundColor = darkTheme ? '#2d2d2d' : 'white';
-                highlightedDiv.style.color = darkTheme ? '#e0e0e0' : 'black';
-                highlightedDiv.style.border = darkTheme ? '1px solid #555' : '1px solid #ccc';
-                updateHighlighting();
-                
-                codeArea.addEventListener('scroll', syncScroll);
-                window.addEventListener('resize', syncScroll);
-            } else {
-                codeArea.style.display = 'block';
-                highlightedDiv.style.display = 'none';
-                codeArea.removeEventListener('scroll', syncScroll);
-                window.removeEventListener('resize', syncScroll);
-            }
-        }
-        
-        function syncScroll() {
-            if (syntaxHighlighting) {
-                highlightedDiv.scrollTop = codeArea.scrollTop;
-                highlightedDiv.scrollLeft = codeArea.scrollLeft;
-            }
-        }
-
         function applyDarkTheme() {
             if (darkTheme) {
                 document.body.style.backgroundColor = '#2d2d2d';
@@ -139,14 +89,6 @@
                 codeArea.style.backgroundColor = '#2d2d2d';
                 codeArea.style.color = '#e0e0e0';
                 codeArea.style.border = '1px solid #555';
-                if (highlightedDiv) {
-                    highlightedDiv.style.backgroundColor = '#2d2d2d';
-                    highlightedDiv.style.color = '#e0e0e0';
-                    highlightedDiv.style.border = '1px solid #555';
-                    if (syntaxHighlighting) {
-                        updateHighlighting();
-                    }
-                }
                 const buttons = document.querySelectorAll('button');
                 for (let btn of buttons) {
                     btn.style.backgroundColor = '';
@@ -168,14 +110,6 @@
                 codeArea.style.backgroundColor = 'white';
                 codeArea.style.color = 'black';
                 codeArea.style.border = '1px solid #ccc';
-                if (highlightedDiv) {
-                    highlightedDiv.style.backgroundColor = 'white';
-                    highlightedDiv.style.color = 'black';
-                    highlightedDiv.style.border = '1px solid #ccc';
-                    if (syntaxHighlighting) {
-                        updateHighlighting();
-                    }
-                }
                 const buttons = document.querySelectorAll('button');
                 for (let btn of buttons) {
                     btn.style.backgroundColor = '';
@@ -197,14 +131,25 @@
             applyDarkTheme();
         }
 
+        function clearAllFiles() {
+            if (confirm('Are you sure? This will delete ALL content in ALL files.')) {
+                for (let i = 0; i < files.length; i++) {
+                    files[i].content = '';
+                }
+                codeArea.value = '';
+                updatePreview();
+                renderTabs();
+                if (darkTheme) {
+                    applyDarkTheme();
+                }
+            }
+        }
+
         function loadFile(index) {
             if (index === currentFileIndex) return;
             saveCurrentContent();
             currentFileIndex = index;
             codeArea.value = files[currentFileIndex].content;
-            if (syntaxHighlighting) {
-                updateHighlighting();
-            }
             updatePreview();
             renderTabs();
             if (darkTheme) {
@@ -220,18 +165,19 @@
                 tab.style.padding = '5px 15px';
                 tab.style.cursor = 'pointer';
                 tab.style.marginRight = '5px';
+                if (darkTheme) {
+                    tab.style.background = i === currentFileIndex ? '#555' : '#3d3d3d';
+                    tab.style.color = '#e0e0e0';
+                    tab.style.border = '1px solid #666';
+                } else {
+                    tab.style.background = i === currentFileIndex ? '#ccc' : '#eee';
+                    tab.style.color = 'black';
+                    tab.style.border = '1px solid #888';
+                }
                 tab.onclick = (function(idx) {
                     return function() { loadFile(idx); };
                 })(i);
                 tabsBar.appendChild(tab);
-            }
-            if (darkTheme) {
-                const tabs = tabsBar.querySelectorAll('button');
-                for (let i = 0; i < tabs.length; i++) {
-                    tabs[i].style.backgroundColor = '';
-                    tabs[i].style.color = '';
-                    tabs[i].style.border = '';
-                }
             }
         }
 
@@ -242,9 +188,6 @@
             files.push({ name: newName, content: '' });
             currentFileIndex = newIndex;
             codeArea.value = files[currentFileIndex].content;
-            if (syntaxHighlighting) {
-                updateHighlighting();
-            }
             updatePreview();
             renderTabs();
             if (darkTheme) {
@@ -263,9 +206,6 @@
                 currentFileIndex = files.length - 1;
             }
             codeArea.value = files[currentFileIndex].content;
-            if (syntaxHighlighting) {
-                updateHighlighting();
-            }
             updatePreview();
             renderTabs();
             if (darkTheme) {
@@ -309,10 +249,6 @@
                 if (rightDiv) rightDiv.style.marginTop = '20px';
                 codeArea.style.height = '150px';
                 codeArea.style.fontSize = '16px';
-                if (highlightedDiv) {
-                    highlightedDiv.style.height = '150px';
-                    highlightedDiv.style.fontSize = '16px';
-                }
             } else {
                 mainLayout.style.display = 'flex';
                 const leftDiv = mainLayout.children[0];
@@ -321,10 +257,6 @@
                 if (rightDiv) rightDiv.style.marginTop = '0';
                 codeArea.style.height = 'auto';
                 codeArea.style.fontSize = '14px';
-                if (highlightedDiv) {
-                    highlightedDiv.style.height = 'auto';
-                    highlightedDiv.style.fontSize = '14px';
-                }
             }
         }
 
@@ -356,9 +288,6 @@
         codeArea.oninput = function() {
             if (files[currentFileIndex]) {
                 files[currentFileIndex].content = codeArea.value;
-                if (syntaxHighlighting) {
-                    updateHighlighting();
-                }
                 updatePreview();
             }
         };
@@ -367,8 +296,8 @@
         deleteFileBtn.onclick = deleteCurrentFile;
         renameFileBtn.onclick = renameCurrentFile;
         downloadFileBtn.onclick = downloadCurrentFile;
-        syntaxBtn.onclick = toggleSyntaxHighlighting;
         darkThemeBtn.onclick = toggleDarkTheme;
+        clearAllBtn.onclick = clearAllFiles;
 
     </script>
 
