@@ -1,1 +1,388 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>html editor</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body>
 
+    <div id="deviceSelector" style="text-align: center; margin-top: 50px;">
+        <h2>choose your device</h2>
+        <button id="pcBtn" style="padding: 15px 30px; font-size: 18px; margin: 10px;">pc / desktop</button>
+        <button id="phoneBtn" style="padding: 15px 30px; font-size: 18px; margin: 10px;">phone / mobile</button>
+    </div>
+
+    <div id="editorContainer" style="display: none;">
+
+        <div id="normalView">
+            <h1>html editor</h1>
+
+            <div style="margin-bottom: 10px; display: flex; flex-wrap: wrap; gap: 10px; align-items: center;">
+                <button id="darkThemeBtn">dark theme: off</button>
+                <button id="clearAllBtn">clear all files</button>
+                <button id="fullscreenPreviewBtn">preview fullscreen: off</button>
+                <div id="heightControl" style="display: none; align-items: center; gap: 10px; margin-left: 10px;">
+                    <span>preview height:</span>
+                    <input type="range" id="previewHeightSlider" min="100" max="600" value="150" style="width: 150px;">
+                    <span id="heightValue">150px</span>
+                </div>
+            </div>
+
+            <div id="tabsBar" style="border-bottom: 2px solid gray; margin-bottom: 10px; display: flex; flex-wrap: wrap; gap: 5px; align-items: center;">
+            </div>
+
+            <div id="mainLayout" style="display: flex; gap: 10px;">
+                <div style="flex: 1;">
+                    <textarea id="code" rows="6" cols="55" style="font-family: monospace; width: 100%; resize: vertical;"></textarea>
+                </div>
+
+                <div style="flex: 1;" id="previewContainer">
+                    <div id="preview" style="border: 2px solid gray; padding: 10px; min-height: 150px; background: white; overflow: auto;"></div>
+                </div>
+            </div>
+
+            <div style="margin-top: 10px;">
+                <button id="newFileBtn">new file</button>
+                <button id="deleteFileBtn" style="margin-left: 10px;">delete current file</button>
+                <button id="renameFileBtn" style="margin-left: 10px;">rename current file</button>
+                <button id="downloadFileBtn" style="margin-left: 10px;">download current file</button>
+            </div>
+        </div>
+
+        <div id="fullscreenView" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 9999; background: white;">
+            <div style="padding: 10px; background: #f0f0f0; border-bottom: 2px solid gray;">
+                <button id="exitFullscreenBtn">exit fullscreen</button>
+                <span style="margin-left: 20px;">preview fullscreen mode</span>
+            </div>
+            <div id="fullscreenPreview" style="padding: 20px; height: calc(100% - 60px); overflow: auto; background: white;"></div>
+        </div>
+
+    </div>
+
+    <script>
+        let files = [
+            { name: 'file1', content: '' },
+            { name: 'file2', content: '' }
+        ];
+        let currentFileIndex = 0;
+        let isPhone = false;
+        let darkTheme = false;
+        let previewFullscreen = false;
+
+        const codeArea = document.getElementById('code');
+        const previewDiv = document.getElementById('preview');
+        const fullscreenPreview = document.getElementById('fullscreenPreview');
+        const normalView = document.getElementById('normalView');
+        const fullscreenView = document.getElementById('fullscreenView');
+        const tabsBar = document.getElementById('tabsBar');
+        const newFileBtn = document.getElementById('newFileBtn');
+        const deleteFileBtn = document.getElementById('deleteFileBtn');
+        const renameFileBtn = document.getElementById('renameFileBtn');
+        const downloadFileBtn = document.getElementById('downloadFileBtn');
+        const darkThemeBtn = document.getElementById('darkThemeBtn');
+        const clearAllBtn = document.getElementById('clearAllBtn');
+        const fullscreenPreviewBtn = document.getElementById('fullscreenPreviewBtn');
+        const exitFullscreenBtn = document.getElementById('exitFullscreenBtn');
+        const deviceSelector = document.getElementById('deviceSelector');
+        const editorContainer = document.getElementById('editorContainer');
+        const mainLayout = document.getElementById('mainLayout');
+        const pcBtn = document.getElementById('pcBtn');
+        const phoneBtn = document.getElementById('phoneBtn');
+        const heightControl = document.getElementById('heightControl');
+        const previewHeightSlider = document.getElementById('previewHeightSlider');
+        const heightValue = document.getElementById('heightValue');
+
+        function saveCurrentContent() {
+            if (files[currentFileIndex]) {
+                files[currentFileIndex].content = codeArea.value;
+            }
+        }
+
+        function updatePreview() {
+            if (files[currentFileIndex]) {
+                previewDiv.innerHTML = files[currentFileIndex].content;
+                if (fullscreenPreview) {
+                    fullscreenPreview.innerHTML = files[currentFileIndex].content;
+                }
+            }
+        }
+
+        function updatePreviewHeight() {
+            let newHeight = previewHeightSlider.value;
+            previewDiv.style.minHeight = newHeight + 'px';
+            heightValue.textContent = newHeight + 'px';
+        }
+
+        function applyDarkTheme() {
+            if (darkTheme) {
+                document.body.style.backgroundColor = '#2d2d2d';
+                document.body.style.color = '#e0e0e0';
+                previewDiv.style.backgroundColor = 'white';
+                previewDiv.style.border = '2px solid #555';
+                previewDiv.style.color = 'black';
+                if (fullscreenPreview) {
+                    fullscreenPreview.style.backgroundColor = 'white';
+                    fullscreenPreview.style.color = 'black';
+                }
+                codeArea.style.backgroundColor = '#2d2d2d';
+                codeArea.style.color = '#e0e0e0';
+                codeArea.style.border = '1px solid #555';
+                const buttons = document.querySelectorAll('button');
+                for (let btn of buttons) {
+                    btn.style.backgroundColor = '';
+                    btn.style.color = '';
+                    btn.style.border = '';
+                }
+                renderTabs();
+            } else {
+                document.body.style.backgroundColor = 'white';
+                document.body.style.color = 'black';
+                previewDiv.style.backgroundColor = 'white';
+                previewDiv.style.border = '2px solid gray';
+                previewDiv.style.color = 'black';
+                if (fullscreenPreview) {
+                    fullscreenPreview.style.backgroundColor = 'white';
+                    fullscreenPreview.style.color = 'black';
+                }
+                codeArea.style.backgroundColor = 'white';
+                codeArea.style.color = 'black';
+                codeArea.style.border = '1px solid #ccc';
+                const buttons = document.querySelectorAll('button');
+                for (let btn of buttons) {
+                    btn.style.backgroundColor = '';
+                    btn.style.color = '';
+                    btn.style.border = '';
+                }
+                renderTabs();
+            }
+        }
+
+        function toggleDarkTheme() {
+            darkTheme = !darkTheme;
+            darkThemeBtn.textContent = darkTheme ? 'dark theme: on' : 'dark theme: off';
+            applyDarkTheme();
+        }
+
+        function clearAllFiles() {
+            if (confirm('Are you sure? This will delete ALL content in ALL files.')) {
+                for (let i = 0; i < files.length; i++) {
+                    files[i].content = '';
+                }
+                codeArea.value = '';
+                updatePreview();
+                renderTabs();
+                if (darkTheme) {
+                    applyDarkTheme();
+                }
+            }
+        }
+
+        function toggleFullscreenPreview() {
+            previewFullscreen = !previewFullscreen;
+            fullscreenPreviewBtn.textContent = previewFullscreen ? 'preview fullscreen: on' : 'preview fullscreen: off';
+            
+            if (previewFullscreen) {
+                normalView.style.display = 'none';
+                fullscreenView.style.display = 'block';
+                fullscreenPreview.innerHTML = files[currentFileIndex].content;
+                if (darkTheme) {
+                    fullscreenPreview.style.backgroundColor = 'white';
+                    fullscreenPreview.style.color = 'black';
+                    document.body.style.backgroundColor = '#2d2d2d';
+                } else {
+                    fullscreenPreview.style.backgroundColor = 'white';
+                    fullscreenPreview.style.color = 'black';
+                }
+            } else {
+                normalView.style.display = 'block';
+                fullscreenView.style.display = 'none';
+            }
+        }
+
+        function exitFullscreen() {
+            previewFullscreen = false;
+            fullscreenPreviewBtn.textContent = 'preview fullscreen: off';
+            normalView.style.display = 'block';
+            fullscreenView.style.display = 'none';
+        }
+
+        function loadFile(index) {
+            if (index === currentFileIndex) return;
+            saveCurrentContent();
+            currentFileIndex = index;
+            codeArea.value = files[currentFileIndex].content;
+            updatePreview();
+            renderTabs();
+            if (darkTheme) {
+                applyDarkTheme();
+            }
+        }
+
+        function renderTabs() {
+            tabsBar.innerHTML = '';
+            for (let i = 0; i < files.length; i++) {
+                const tab = document.createElement('button');
+                tab.textContent = files[i].name;
+                tab.style.padding = '5px 15px';
+                tab.style.cursor = 'pointer';
+                tab.style.marginRight = '5px';
+                if (darkTheme) {
+                    if (i === currentFileIndex) {
+                        tab.style.background = '#777';
+                        tab.style.color = 'white';
+                        tab.style.border = '2px solid #aaa';
+                    } else {
+                        tab.style.background = '#3d3d3d';
+                        tab.style.color = '#e0e0e0';
+                        tab.style.border = '1px solid #666';
+                    }
+                } else {
+                    if (i === currentFileIndex) {
+                        tab.style.background = '#ccc';
+                        tab.style.color = 'black';
+                        tab.style.border = '1px solid #888';
+                    } else {
+                        tab.style.background = '#eee';
+                        tab.style.color = 'black';
+                        tab.style.border = '1px solid #888';
+                    }
+                }
+                tab.onclick = (function(idx) {
+                    return function() { loadFile(idx); };
+                })(i);
+                tabsBar.appendChild(tab);
+            }
+        }
+
+        function newFile() {
+            saveCurrentContent();
+            let newIndex = files.length;
+            let newName = 'file' + (newIndex + 1);
+            files.push({ name: newName, content: '' });
+            currentFileIndex = newIndex;
+            codeArea.value = files[currentFileIndex].content;
+            updatePreview();
+            renderTabs();
+            if (darkTheme) {
+                applyDarkTheme();
+            }
+        }
+
+        function deleteCurrentFile() {
+            if (files.length === 1) {
+                alert('Cannot delete last file');
+                return;
+            }
+            saveCurrentContent();
+            files.splice(currentFileIndex, 1);
+            if (currentFileIndex >= files.length) {
+                currentFileIndex = files.length - 1;
+            }
+            codeArea.value = files[currentFileIndex].content;
+            updatePreview();
+            renderTabs();
+            if (darkTheme) {
+                applyDarkTheme();
+            }
+        }
+
+        function renameCurrentFile() {
+            let newName = prompt('Enter new name for file:', files[currentFileIndex].name);
+            if (newName && newName.trim() !== '') {
+                files[currentFileIndex].name = newName.trim();
+                renderTabs();
+                if (darkTheme) {
+                    applyDarkTheme();
+                }
+            }
+        }
+
+        function downloadCurrentFile() {
+            let content = files[currentFileIndex].content;
+            let fileName = files[currentFileIndex].name;
+            if (!fileName.endsWith('.html') && !fileName.endsWith('.htm')) {
+                fileName = fileName + '.html';
+            }
+            let blob = new Blob([content], { type: 'text/html' });
+            let link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = fileName;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(link.href);
+        }
+
+        function applyLayout() {
+            if (isPhone) {
+                mainLayout.style.display = 'block';
+                heightControl.style.display = 'none';
+                const leftDiv = mainLayout.children[0];
+                const rightDiv = mainLayout.children[1];
+                if (leftDiv) leftDiv.style.marginBottom = '20px';
+                if (rightDiv) rightDiv.style.marginTop = '20px';
+                codeArea.style.height = '150px';
+                codeArea.style.fontSize = '16px';
+                previewDiv.style.minHeight = '150px';
+            } else {
+                mainLayout.style.display = 'flex';
+                heightControl.style.display = 'flex';
+                const leftDiv = mainLayout.children[0];
+                const rightDiv = mainLayout.children[1];
+                if (leftDiv) leftDiv.style.marginBottom = '0';
+                if (rightDiv) rightDiv.style.marginTop = '0';
+                codeArea.style.height = 'auto';
+                codeArea.style.fontSize = '14px';
+                updatePreviewHeight();
+            }
+        }
+
+        window.switchToFile = function(index) {
+            if (index >= 0 && index < files.length) {
+                loadFile(index);
+            }
+        };
+
+        function initEditor() {
+            deviceSelector.style.display = 'none';
+            editorContainer.style.display = 'block';
+            renderTabs();
+            codeArea.value = files[currentFileIndex].content;
+            updatePreview();
+            applyLayout();
+        }
+
+        pcBtn.onclick = function() {
+            isPhone = false;
+            initEditor();
+        };
+
+        phoneBtn.onclick = function() {
+            isPhone = true;
+            initEditor();
+        };
+
+        codeArea.oninput = function() {
+            if (files[currentFileIndex]) {
+                files[currentFileIndex].content = codeArea.value;
+                updatePreview();
+            }
+        };
+
+        previewHeightSlider.oninput = function() {
+            updatePreviewHeight();
+        };
+
+        newFileBtn.onclick = newFile;
+        deleteFileBtn.onclick = deleteCurrentFile;
+        renameFileBtn.onclick = renameCurrentFile;
+        downloadFileBtn.onclick = downloadCurrentFile;
+        darkThemeBtn.onclick = toggleDarkTheme;
+        clearAllBtn.onclick = clearAllFiles;
+        fullscreenPreviewBtn.onclick = toggleFullscreenPreview;
+        exitFullscreenBtn.onclick = exitFullscreen;
+
+    </script>
+
+</body>
+</html>
