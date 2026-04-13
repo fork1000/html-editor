@@ -17,10 +17,15 @@
         <div id="normalView">
             <h1>html editor</h1>
 
-            <div style="margin-bottom: 10px; display: flex; flex-wrap: wrap; gap: 10px;">
+            <div style="margin-bottom: 10px; display: flex; flex-wrap: wrap; gap: 10px; align-items: center;">
                 <button id="darkThemeBtn">dark theme: off</button>
                 <button id="clearAllBtn">clear all files</button>
                 <button id="fullscreenPreviewBtn">preview fullscreen: off</button>
+                <div id="heightControl" style="display: none; align-items: center; gap: 10px; margin-left: 10px;">
+                    <span>preview height:</span>
+                    <input type="range" id="previewHeightSlider" min="100" max="600" value="150" style="width: 150px;">
+                    <span id="heightValue">150px</span>
+                </div>
             </div>
 
             <div id="tabsBar" style="border-bottom: 2px solid gray; margin-bottom: 10px; display: flex; flex-wrap: wrap; gap: 5px; align-items: center;">
@@ -32,7 +37,7 @@
                 </div>
 
                 <div style="flex: 1;" id="previewContainer">
-                    <div id="preview" style="border: 2px solid gray; padding: 10px; min-height: 150px; background: white;"></div>
+                    <div id="preview" style="border: 2px solid gray; padding: 10px; min-height: 150px; background: white; overflow: auto;"></div>
                 </div>
             </div>
 
@@ -83,6 +88,9 @@
         const mainLayout = document.getElementById('mainLayout');
         const pcBtn = document.getElementById('pcBtn');
         const phoneBtn = document.getElementById('phoneBtn');
+        const heightControl = document.getElementById('heightControl');
+        const previewHeightSlider = document.getElementById('previewHeightSlider');
+        const heightValue = document.getElementById('heightValue');
 
         function saveCurrentContent() {
             if (files[currentFileIndex]) {
@@ -97,6 +105,12 @@
                     fullscreenPreview.innerHTML = files[currentFileIndex].content;
                 }
             }
+        }
+
+        function updatePreviewHeight() {
+            let newHeight = previewHeightSlider.value;
+            previewDiv.style.minHeight = newHeight + 'px';
+            heightValue.textContent = newHeight + 'px';
         }
 
         function applyDarkTheme() {
@@ -302,20 +316,24 @@
         function applyLayout() {
             if (isPhone) {
                 mainLayout.style.display = 'block';
+                heightControl.style.display = 'none';
                 const leftDiv = mainLayout.children[0];
                 const rightDiv = mainLayout.children[1];
                 if (leftDiv) leftDiv.style.marginBottom = '20px';
                 if (rightDiv) rightDiv.style.marginTop = '20px';
                 codeArea.style.height = '150px';
                 codeArea.style.fontSize = '16px';
+                previewDiv.style.minHeight = '150px';
             } else {
                 mainLayout.style.display = 'flex';
+                heightControl.style.display = 'flex';
                 const leftDiv = mainLayout.children[0];
                 const rightDiv = mainLayout.children[1];
                 if (leftDiv) leftDiv.style.marginBottom = '0';
                 if (rightDiv) rightDiv.style.marginTop = '0';
                 codeArea.style.height = 'auto';
                 codeArea.style.fontSize = '14px';
+                updatePreviewHeight();
             }
         }
 
@@ -349,6 +367,10 @@
                 files[currentFileIndex].content = codeArea.value;
                 updatePreview();
             }
+        };
+
+        previewHeightSlider.oninput = function() {
+            updatePreviewHeight();
         };
 
         newFileBtn.onclick = newFile;
