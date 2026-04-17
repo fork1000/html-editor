@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 </head>
 <body>
-<h2>Lauti is the best!!</h2>
+
     <div id="deviceSelector" style="text-align: center; margin-top: 50px;">
         <h2>choose your device</h2>
         <button id="pcBtn" style="padding: 15px 30px; font-size: 18px; margin: 10px;">pc / desktop</button>
@@ -21,10 +21,25 @@
                 <button id="darkThemeBtn">dark theme: off</button>
                 <button id="clearAllBtn">clear all files</button>
                 <button id="fullscreenPreviewBtn">preview fullscreen: off</button>
+                <button id="newWindowPreviewBtn">preview in new window</button>
+                <button id="findReplaceBtn">find and replace</button>
                 <div id="heightControl" style="display: none; align-items: center; gap: 10px; margin-left: 10px;">
                     <span>preview height:</span>
                     <input type="range" id="previewHeightSlider" min="100" max="600" value="150" style="width: 150px;">
                     <span id="heightValue">150px</span>
+                </div>
+            </div>
+
+            <div id="findReplaceBar" style="display: none; margin-bottom: 10px; padding: 10px; border: 1px solid gray; background: #f9f9f9;">
+                <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
+                    <span>find:</span>
+                    <input type="text" id="findInput" style="width: 200px; font-family: monospace;">
+                    <span>replace:</span>
+                    <input type="text" id="replaceInput" style="width: 200px; font-family: monospace;">
+                    <button id="findNextBtn">find next</button>
+                    <button id="replaceBtn">replace</button>
+                    <button id="replaceAllBtn">replace all</button>
+                    <button id="closeFindBarBtn">close</button>
                 </div>
             </div>
 
@@ -68,6 +83,9 @@
         let isPhone = false;
         let darkTheme = false;
         let previewFullscreen = false;
+        let previewWindow = null;
+        let lastFindIndex = -1;
+        let lastFindText = '';
 
         const codeArea = document.getElementById('code');
         const previewDiv = document.getElementById('preview');
@@ -82,6 +100,15 @@
         const darkThemeBtn = document.getElementById('darkThemeBtn');
         const clearAllBtn = document.getElementById('clearAllBtn');
         const fullscreenPreviewBtn = document.getElementById('fullscreenPreviewBtn');
+        const newWindowPreviewBtn = document.getElementById('newWindowPreviewBtn');
+        const findReplaceBtn = document.getElementById('findReplaceBtn');
+        const findReplaceBar = document.getElementById('findReplaceBar');
+        const findInput = document.getElementById('findInput');
+        const replaceInput = document.getElementById('replaceInput');
+        const findNextBtn = document.getElementById('findNextBtn');
+        const replaceBtn = document.getElementById('replaceBtn');
+        const replaceAllBtn = document.getElementById('replaceAllBtn');
+        const closeFindBarBtn = document.getElementById('closeFindBarBtn');
         const exitFullscreenBtn = document.getElementById('exitFullscreenBtn');
         const deviceSelector = document.getElementById('deviceSelector');
         const editorContainer = document.getElementById('editorContainer');
@@ -100,9 +127,13 @@
 
         function updatePreview() {
             if (files[currentFileIndex]) {
-                previewDiv.innerHTML = files[currentFileIndex].content;
+                let content = files[currentFileIndex].content;
+                previewDiv.innerHTML = content;
                 if (fullscreenPreview) {
-                    fullscreenPreview.innerHTML = files[currentFileIndex].content;
+                    fullscreenPreview.innerHTML = content;
+                }
+                if (previewWindow && !previewWindow.closed) {
+                    previewWindow.document.body.innerHTML = content;
                 }
             }
         }
@@ -111,6 +142,118 @@
             let newHeight = previewHeightSlider.value;
             previewDiv.style.minHeight = newHeight + 'px';
             heightValue.textContent = newHeight + 'px';
+        }
+
+        function openPreviewWindow() {
+            if (previewWindow && !previewWindow.closed) {
+                previewWindow.close();
+            }
+            previewWindow = window.open('', '_blank', 'width=800,height=600,resizable=yes,scrollbars=yes');
+            previewWindow.document.write('<html><head><title>live preview</title></head><body></body></html>');
+            previewWindow.document.body.innerHTML = files[currentFileIndex].content;
+            previewWindow.document.body.style.margin = '20px';
+            if (darkTheme) {
+                previewWindow.document.body.style.backgroundColor = 'white';
+                previewWindow.document.body.style.color = 'black';
+            }
+            let interval = setInterval(function() {
+                if (previewWindow && !previewWindow.closed) {
+                    previewWindow.document.body.innerHTML = files[currentFileIndex].content;
+                } else {
+                    clearInterval(interval);
+                }
+            }, 500);
+        }
+
+        function findNext() {
+            let findText = findInput.value;
+            if (!findText) {
+                alert('enter text to find');
+                return;
+            }
+            let content = codeArea.value;
+            if (findText !== lastFindText) {
+                lastFindIndex = -1;
+                lastFindText = findText;
+            }
+            let startPos = lastFindIndex + 1;
+            let foundPos = content.indexOf(findText, startPos);
+            if (foundPos === -1) {
+                if (lastFindIndex !== -1) {
+                    foundPos = content.indexOf(findText, 0);
+                    if (foundPos === -1) {
+                        alert('no more matches');
+                        lastFindIndex = -1;
+                        return;
+                    }
+                } else {
+                    alert('text not found');
+                    return;
+                }
+            }
+            lastFindIndex = foundPos;
+            codeArea.focus();
+            codeArea.setSelectionRange(foundPos, foundPos + findText.length);
+            let lines = content.substr(0, foundPos).split('\n');
+            let lineNumber = lines.length;
+            let textareaHeight = codeArea.clientHeight;
+            let lineHeight = parseInt(getComputedStyle(codeArea).lineHeight);
+            if (lineHeight) {
+                let scrollPos = (lineNumber - 3) * lineHeight;
+                codeArea.scrollTop = Math.max(0, scrollPos);
+            }
+        }
+
+        function replaceCurrent() {
+            let findText = findInput.value;
+            let replaceText = replaceInput.value;
+            if (!findText) {
+                alert('enter text to find');
+                return;
+            }
+            let content = codeArea.value;
+            let selectionStart = codeArea.selectionStart;
+            let selectionEnd = codeArea.selectionEnd;
+            let selectedText = content.substring(selectionStart, selectionEnd);
+            if (selectedText === findText) {
+                let newContent = content.substring(0, selectionStart) + replaceText + content.substring(selectionEnd);
+                codeArea.value = newContent;
+                files[currentFileIndex].content = newContent;
+                updatePreview();
+                let newPos = selectionStart + replaceText.length;
+                codeArea.setSelectionRange(newPos, newPos);
+                lastFindIndex = newPos - 1;
+            } else {
+                findNext();
+            }
+        }
+
+        function replaceAll() {
+            let findText = findInput.value;
+            let replaceText = replaceInput.value;
+            if (!findText) {
+                alert('enter text to find');
+                return;
+            }
+            let content = codeArea.value;
+            let newContent = content.split(findText).join(replaceText);
+            if (newContent !== content) {
+                codeArea.value = newContent;
+                files[currentFileIndex].content = newContent;
+                updatePreview();
+                alert('replaced all occurrences');
+            } else {
+                alert('text not found');
+            }
+            lastFindIndex = -1;
+        }
+
+        function toggleFindReplaceBar() {
+            if (findReplaceBar.style.display === 'none') {
+                findReplaceBar.style.display = 'block';
+            } else {
+                findReplaceBar.style.display = 'none';
+            }
         }
 
         function applyDarkTheme() {
@@ -127,6 +270,8 @@
                 codeArea.style.backgroundColor = '#2d2d2d';
                 codeArea.style.color = '#e0e0e0';
                 codeArea.style.border = '1px solid #555';
+                findReplaceBar.style.backgroundColor = '#3d3d3d';
+                findReplaceBar.style.border = '1px solid #666';
                 const buttons = document.querySelectorAll('button');
                 for (let btn of buttons) {
                     btn.style.backgroundColor = '';
@@ -147,6 +292,8 @@
                 codeArea.style.backgroundColor = 'white';
                 codeArea.style.color = 'black';
                 codeArea.style.border = '1px solid #ccc';
+                findReplaceBar.style.backgroundColor = '#f9f9f9';
+                findReplaceBar.style.border = '1px solid gray';
                 const buttons = document.querySelectorAll('button');
                 for (let btn of buttons) {
                     btn.style.backgroundColor = '';
@@ -216,6 +363,8 @@
             if (darkTheme) {
                 applyDarkTheme();
             }
+            lastFindIndex = -1;
+            lastFindText = '';
         }
 
         function renderTabs() {
@@ -381,6 +530,12 @@
         clearAllBtn.onclick = clearAllFiles;
         fullscreenPreviewBtn.onclick = toggleFullscreenPreview;
         exitFullscreenBtn.onclick = exitFullscreen;
+        newWindowPreviewBtn.onclick = openPreviewWindow;
+        findReplaceBtn.onclick = toggleFindReplaceBar;
+        findNextBtn.onclick = findNext;
+        replaceBtn.onclick = replaceCurrent;
+        replaceAllBtn.onclick = replaceAll;
+        closeFindBarBtn.onclick = function() { findReplaceBar.style.display = 'none'; };
 
     </script>
 
