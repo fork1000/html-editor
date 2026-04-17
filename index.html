@@ -23,7 +23,7 @@
                 <button id="fullscreenPreviewBtn">preview fullscreen: off</button>
                 <button id="newWindowPreviewBtn">preview in new window</button>
                 <button id="findReplaceBtn">find and replace</button>
-                <div id="heightControl" style="display: none; align-items: center; gap: 10px; margin-left: 10px;">
+                <div id="heightControl" style="align-items: center; gap: 10px; margin-left: 10px;">
                     <span>preview height:</span>
                     <input type="range" id="previewHeightSlider" min="100" max="600" value="150" style="width: 150px;">
                     <span id="heightValue">150px</span>
@@ -196,7 +196,6 @@
             codeArea.setSelectionRange(foundPos, foundPos + findText.length);
             let lines = content.substr(0, foundPos).split('\n');
             let lineNumber = lines.length;
-            let textareaHeight = codeArea.clientHeight;
             let lineHeight = parseInt(getComputedStyle(codeArea).lineHeight);
             if (lineHeight) {
                 let scrollPos = (lineNumber - 3) * lineHeight;
@@ -463,9 +462,9 @@
         }
 
         function applyLayout() {
+            heightControl.style.display = 'flex';
             if (isPhone) {
                 mainLayout.style.display = 'block';
-                heightControl.style.display = 'none';
                 const leftDiv = mainLayout.children[0];
                 const rightDiv = mainLayout.children[1];
                 if (leftDiv) leftDiv.style.marginBottom = '20px';
@@ -475,7 +474,6 @@
                 previewDiv.style.minHeight = '150px';
             } else {
                 mainLayout.style.display = 'flex';
-                heightControl.style.display = 'flex';
                 const leftDiv = mainLayout.children[0];
                 const rightDiv = mainLayout.children[1];
                 if (leftDiv) leftDiv.style.marginBottom = '0';
