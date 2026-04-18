@@ -41,6 +41,17 @@
             resize: vertical;
             outline: none;
         }
+        iframe {
+            border: 2px solid gray;
+            background: white;
+            width: 100%;
+            height: 100%;
+            min-height: 150px;
+        }
+        #previewContainer {
+            display: flex;
+            flex-direction: column;
+        }
     </style>
 </head>
 <body>
@@ -96,7 +107,7 @@
                 </div>
 
                 <div style="flex: 1;" id="previewContainer">
-                    <div id="preview" style="border: 2px solid gray; padding: 10px; min-height: 150px; background: white; overflow: auto;"></div>
+                    <iframe id="previewIframe" title="preview" sandbox="allow-same-origin allow-scripts allow-popups allow-forms allow-modals"></iframe>
                 </div>
             </div>
 
@@ -113,7 +124,7 @@
                 <button id="exitFullscreenBtn">exit fullscreen</button>
                 <span style="margin-left: 20px;">preview fullscreen mode</span>
             </div>
-            <div id="fullscreenPreview" style="padding: 20px; height: calc(100% - 60px); overflow: auto; background: white;"></div>
+            <iframe id="fullscreenIframe" title="fullscreen preview" style="width: 100%; height: calc(100% - 60px); border: none;" sandbox="allow-same-origin allow-scripts allow-popups allow-forms allow-modals"></iframe>
         </div>
 
     </div>
@@ -133,8 +144,8 @@
 
         const codeArea = document.getElementById('code');
         const lineNumbersDiv = document.getElementById('lineNumbers');
-        const previewDiv = document.getElementById('preview');
-        const fullscreenPreview = document.getElementById('fullscreenPreview');
+        const previewIframe = document.getElementById('previewIframe');
+        const fullscreenIframe = document.getElementById('fullscreenIframe');
         const normalView = document.getElementById('normalView');
         const fullscreenView = document.getElementById('fullscreenView');
         const tabsBar = document.getElementById('tabsBar');
@@ -199,19 +210,30 @@
         function updatePreview() {
             if (files[currentFileIndex]) {
                 let content = files[currentFileIndex].content;
-                previewDiv.innerHTML = content;
-                if (fullscreenPreview) {
-                    fullscreenPreview.innerHTML = content;
+                let doc = previewIframe.contentDocument || previewIframe.contentWindow.document;
+                doc.open();
+                doc.write(content);
+                doc.close();
+                
+                if (fullscreenIframe) {
+                    let fsDoc = fullscreenIframe.contentDocument || fullscreenIframe.contentWindow.document;
+                    fsDoc.open();
+                    fsDoc.write(content);
+                    fsDoc.close();
                 }
+                
                 if (previewWindow && !previewWindow.closed) {
-                    previewWindow.document.body.innerHTML = content;
+                    previewWindow.document.open();
+                    previewWindow.document.write(content);
+                    previewWindow.document.close();
                 }
             }
         }
 
         function updatePreviewHeight() {
             let newHeight = previewHeightSlider.value;
-            previewDiv.style.minHeight = newHeight + 'px';
+            previewIframe.style.height = newHeight + 'px';
+            previewIframe.style.minHeight = newHeight + 'px';
             heightValue.textContent = newHeight + 'px';
         }
 
@@ -220,16 +242,13 @@
                 previewWindow.close();
             }
             previewWindow = window.open('', '_blank', 'width=800,height=600,resizable=yes,scrollbars=yes');
-            previewWindow.document.write('<html><head><title>live preview</title></head><body></body></html>');
-            previewWindow.document.body.innerHTML = files[currentFileIndex].content;
-            previewWindow.document.body.style.margin = '20px';
-            if (darkTheme) {
-                previewWindow.document.body.style.backgroundColor = 'white';
-                previewWindow.document.body.style.color = 'black';
-            }
+            previewWindow.document.write(files[currentFileIndex].content);
+            previewWindow.document.close();
             let interval = setInterval(function() {
                 if (previewWindow && !previewWindow.closed) {
-                    previewWindow.document.body.innerHTML = files[currentFileIndex].content;
+                    previewWindow.document.open();
+                    previewWindow.document.write(files[currentFileIndex].content);
+                    previewWindow.document.close();
                 } else {
                     clearInterval(interval);
                 }
@@ -332,13 +351,6 @@
             if (darkTheme) {
                 document.body.style.backgroundColor = '#2d2d2d';
                 document.body.style.color = '#e0e0e0';
-                previewDiv.style.backgroundColor = 'white';
-                previewDiv.style.border = '2px solid #555';
-                previewDiv.style.color = 'black';
-                if (fullscreenPreview) {
-                    fullscreenPreview.style.backgroundColor = 'white';
-                    fullscreenPreview.style.color = 'black';
-                }
                 codeArea.style.backgroundColor = '#2d2d2d';
                 codeArea.style.color = '#e0e0e0';
                 codeArea.style.border = 'none';
@@ -359,13 +371,6 @@
             } else {
                 document.body.style.backgroundColor = 'white';
                 document.body.style.color = 'black';
-                previewDiv.style.backgroundColor = 'white';
-                previewDiv.style.border = '2px solid gray';
-                previewDiv.style.color = 'black';
-                if (fullscreenPreview) {
-                    fullscreenPreview.style.backgroundColor = 'white';
-                    fullscreenPreview.style.color = 'black';
-                }
                 codeArea.style.backgroundColor = 'white';
                 codeArea.style.color = 'black';
                 codeArea.style.border = 'none';
@@ -415,15 +420,10 @@
             if (previewFullscreen) {
                 normalView.style.display = 'none';
                 fullscreenView.style.display = 'block';
-                fullscreenPreview.innerHTML = files[currentFileIndex].content;
-                if (darkTheme) {
-                    fullscreenPreview.style.backgroundColor = 'white';
-                    fullscreenPreview.style.color = 'black';
-                    document.body.style.backgroundColor = '#2d2d2d';
-                } else {
-                    fullscreenPreview.style.backgroundColor = 'white';
-                    fullscreenPreview.style.color = 'black';
-                }
+                let fsDoc = fullscreenIframe.contentDocument || fullscreenIframe.contentWindow.document;
+                fsDoc.open();
+                fsDoc.write(files[currentFileIndex].content);
+                fsDoc.close();
             } else {
                 normalView.style.display = 'block';
                 fullscreenView.style.display = 'none';
@@ -559,7 +559,7 @@
                 if (rightDiv) rightDiv.style.marginTop = '20px';
                 codeArea.style.height = '150px';
                 codeArea.style.fontSize = '16px';
-                previewDiv.style.minHeight = '150px';
+                previewIframe.style.height = '300px';
                 editorWithLines.style.fontSize = '16px';
                 codeArea.style.lineHeight = '1.5';
                 lineNumbersDiv.style.lineHeight = '1.5';
